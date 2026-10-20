@@ -1,0 +1,22 @@
+GoapAI
+
+Copyright 2024, Agoune Ramine
+
+----
+
+This crate is a Rust translation of GoapAI
+(https://github.com/akmonengine/goapai), pinned at commit
+2e86c5ee56d6d10f43ed563214b1aa86be83db2d (tag v1.2.0, 2026-09-18),
+originally licensed under the Apache License, Version 2.0
+(LICENSE-APACHE-2.0.md in this directory).
+
+Modifications: the Go source was translated to Rust and modified as listed in
+docs/DEVIATIONS.md. Translation and modifications Copyright 2026 the game-npc
+authors, distributed under the GNU Affero General Public License v3.0 only
+(LICENSE in this directory).
+
+----
+
+src/heap.rs ports the sift-up / sift-down algorithm of the Go standard
+library's container/heap package, Copyright 2009 The Go Authors, under the
+BSD 3-Clause licence (LICENSE-GO-BSD-3-Clause in this directory).

@@ -1,0 +1,336 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+//
+// Differential fixture generator for the goapai Rust translation.
+//
+// Generates random planning scenarios with a fixed-seed PRNG, solves each
+// with the ORIGINAL Go goapai, and writes scenario + result to a text
+// fixture that crates/goapai/tests/differential.rs replays against the Rust
+// port. Run via regen.sh, which places this file inside a checkout of
+// upstream goapai pinned at the commit named there.
+//
+// Scenarios avoid the inputs where the Rust port deliberately differs from
+// upstream (docs/DEVIATIONS.md): effects on keys absent from the initial
+// world (D1), duplicate initial keys (D4), goal-priority ties (D5), string
+// ADD effects (D6), integer division by zero (D7), and procedural
+// conditions (D3). Those differences are covered by unit tests instead.
+package main
+
+import (
+	"fmt"
+	"math"
+	"os"
+	"strings"
+
+	"github.com/akmonengine/goapai"
+)
+
+type rng struct{ s uint64 }
+
+// splitmix64
+func (r *rng) next() uint64 {
+	r.s += 0x9e3779b97f4a7c15
+	z := r.s
+	z = (z ^ (z >> 30)) * 0xbf58476d1ce4e5b9
+	z = (z ^ (z >> 27)) * 0x94d049bb133111eb
+	return z ^ (z >> 31)
+}
+func (r *rng) n(k int) int         { return int(r.next() % uint64(k)) }
+func (r *rng) chance(pct int) bool { return r.n(100) < pct }
+
+var types = []string{"i8", "int", "u8", "u64", "f64", "bool", "str"}
+var floats = []float64{0, 0.5, 1.25, -2, 0.1, 3, 7.75, math.NaN()}
+var strs = []string{"a", "b", "c"}
+var costs = []float32{1, 2, 0.5, 0.1, 0.3, 1.5, 3}
+
+type val struct {
+	t string
+	i int64
+	u uint64
+	f float64
+	b bool
+	s string
+}
+
+func (r *rng) value(t string) val {
+	v := val{t: t}
+	switch t {
+	case "i8", "int":
+		v.i = int64(r.n(14) - 3)
+		if t == "i8" && r.chance(10) {
+			v.i = 120 + int64(r.n(8)) // near overflow
+		}
+	case "u8", "u64":
+		v.u = uint64(r.n(12))
+		if t == "u8" && r.chance(10) {
+			v.u = 250 + uint64(r.n(6))
+		}
+		if t == "u64" && r.chance(5) {
+			v.u = math.MaxUint64 - uint64(r.n(3))
+		}
+	case "f64":
+		v.f = floats[r.n(len(floats))]
+	case "bool":
+		v.b = r.chance(50)
+	case "str":
+		v.s = strs[r.n(len(strs))]
+	}
+	return v
+}
+
+func (v val) enc() string {
+	// Encode the value exactly as converted into the Go type.
+	switch v.t {
+	case "i8":
+		return fmt.Sprint(int8(v.i))
+	case "int":
+		return fmt.Sprint(v.i)
+	case "u8":
+		return fmt.Sprint(uint8(v.u))
+	case "u64":
+		return fmt.Sprint(v.u)
+	case "f64":
+		return fmt.Sprintf("%016x", math.Float64bits(v.f))
+	case "bool":
+		if v.b {
+			return "1"
+		}
+		return "0"
+	}
+	return v.s
+}
+
+func condition(key goapai.StateKey, v val, op uint8) goapai.ConditionInterface {
+	o := []goapai.Condition[int]{{Operator: goapai.EQUAL}, {Operator: goapai.NOT_EQUAL}, {Operator: goapai.LOWER_OR_EQUAL},
+		{Operator: goapai.LOWER}, {Operator: goapai.UPPER_OR_EQUAL}, {Operator: goapai.UPPER}}[op].Operator
+	switch v.t {
+	case "i8":
+		return &goapai.Condition[int8]{Key: key, Value: int8(v.i), Operator: o}
+	case "int":
+		return &goapai.Condition[int]{Key: key, Value: int(v.i), Operator: o}
+	case "u8":
+		return &goapai.Condition[uint8]{Key: key, Value: uint8(v.u), Operator: o}
+	case "u64":
+		return &goapai.Condition[uint64]{Key: key, Value: v.u, Operator: o}
+	case "f64":
+		return &goapai.Condition[float64]{Key: key, Value: v.f, Operator: o}
+	case "bool":
+		return &goapai.ConditionBool{Key: key, Value: v.b, Operator: o}
+	}
+	return &goapai.ConditionString{Key: key, Value: v.s, Operator: o}
+}
+
+var arith = []goapai.Effect[int]{{Operator: goapai.SET}, {Operator: goapai.ADD}, {Operator: goapai.SUBSTRACT},
+	{Operator: goapai.MULTIPLY}, {Operator: goapai.DIVIDE}}
+
+func effect(key goapai.StateKey, v val, op uint8) goapai.EffectInterface {
+	a := arith[op].Operator
+	switch v.t {
+	case "i8":
+		return goapai.Effect[int8]{Key: key, Value: int8(v.i), Operator: a}
+	case "int":
+		return goapai.Effect[int]{Key: key, Value: int(v.i), Operator: a}
+	case "u8":
+		return goapai.Effect[uint8]{Key: key, Value: uint8(v.u), Operator: a}
+	case "u64":
+		return goapai.Effect[uint64]{Key: key, Value: v.u, Operator: a}
+	case "f64":
+		return goapai.Effect[float64]{Key: key, Value: v.f, Operator: a}
+	case "bool":
+		return goapai.EffectBool{Key: key, Value: v.b, Operator: a}
+	}
+	return goapai.EffectString{Key: key, Value: v.s, Operator: a}
+}
+
+func setState(agent *goapai.Agent, key goapai.StateKey, v val) {
+	switch v.t {
+	case "i8":
+		goapai.SetState[int8](agent, key, int8(v.i))
+	case "int":
+		goapai.SetState[int](agent, key, int(v.i))
+	case "u8":
+		goapai.SetState[uint8](agent, key, uint8(v.u))
+	case "u64":
+		goapai.SetState[uint64](agent, key, v.u)
+	case "f64":
+		goapai.SetState[float64](agent, key, v.f)
+	case "bool":
+		goapai.SetState[bool](agent, key, v.b)
+	case "str":
+		goapai.SetState[string](agent, key, v.s)
+	}
+}
+
+func main() {
+	count := 3000
+	r := &rng{s: 0x60a9a1}
+	var out strings.Builder
+	out.WriteString("# goapai differential fixture; generated by differential/main.go\n")
+	out.WriteString("# against upstream goapai commit 2e86c5ee56d6d10f43ed563214b1aa86be83db2d\n")
+
+	for id := 0; id < count; id++ {
+		maxDepth := 1 + r.n(6)
+		fmt.Fprintf(&out, "S %d %d\n", id, maxDepth)
+
+		nkeys := 1 + r.n(4)
+		keyType := make([]string, nkeys)
+		initial := make([]val, nkeys)
+		for k := 0; k < nkeys; k++ {
+			keyType[k] = types[r.n(len(types))]
+			initial[k] = r.value(keyType[k])
+		}
+
+		// Values for conditions and effects use the key's type most of the
+		// time and a random type otherwise, to exercise type mismatches.
+		pick := func(k int) val {
+			if r.chance(90) {
+				return r.value(keyType[k])
+			}
+			return r.value(types[r.n(len(types))])
+		}
+
+		type eff struct {
+			k  int
+			v  val
+			op uint8
+		}
+		var made []eff
+
+		// Tie mode: uniform costs and duplicated actions under new names, so
+		// that which of several equal-cost plans is returned depends on the
+		// heap's tie-breaking order.
+		tie := r.chance(35)
+
+		actions := goapai.Actions{}
+		nactions := 1 + r.n(5)
+		var lines []string
+		for a := 0; a < nactions; a++ {
+			name := fmt.Sprintf("a%d", a)
+			cost := costs[r.n(len(costs))]
+			if tie {
+				cost = 1
+			}
+			rep := r.chance(50)
+			repI := 0
+			if rep {
+				repI = 1
+			}
+			lines = append(lines, fmt.Sprintf("A %s %08x %d", name, math.Float32bits(cost), repI))
+			conds := goapai.Conditions{}
+			for c := r.n(3); c > 0; c-- {
+				k := r.n(nkeys)
+				v := pick(k)
+				op := uint8(r.n(6))
+				conds = append(conds, condition(goapai.StateKey(k), v, op))
+				lines = append(lines, fmt.Sprintf("C %d %s %d %s", k, v.t, op, v.enc()))
+			}
+			effs := goapai.Effects{}
+			for e := 1 + r.n(3); e > 0; e-- {
+				k := r.n(nkeys)
+				v := pick(k)
+				op := uint8(r.n(5))
+				switch v.t {
+				case "str":
+					if !r.chance(10) {
+						op = 0 // SET; string ADD is deviation D6
+					} else {
+						op = 2 + uint8(r.n(3)) // error path
+					}
+				case "bool":
+					if !r.chance(90) {
+						op = 1 + uint8(r.n(4)) // error path
+					} else {
+						op = 0
+					}
+				}
+				if op == 4 && (v.t != "f64") && v.i == 0 && v.u == 0 {
+					op = 3 // integer division by zero is deviation D7
+				}
+				made = append(made, eff{k, v, op})
+				effs = append(effs, effect(goapai.StateKey(k), v, op))
+				lines = append(lines, fmt.Sprintf("E %d %s %d %s", k, v.t, op, v.enc()))
+			}
+			actions.AddAction(name, cost, rep, conds, effs)
+			if tie && r.chance(50) {
+				// Same action again under another name.
+				start := len(lines) - 1 - len(conds) - len(effs)
+				dup := append([]string{fmt.Sprintf("A %sd %08x %d", name, math.Float32bits(cost), repI)},
+					lines[start+1:]...)
+				lines = append(lines, dup...)
+				actions.AddAction(name+"d", cost, rep, conds, effs)
+			}
+		}
+
+		goals := goapai.Goals{}
+		ngoals := 1 + r.n(3)
+		prios := []float32{0.5, 1, 2}
+		for i := range prios {
+			j := r.n(i + 1)
+			prios[i], prios[j] = prios[j], prios[i]
+		}
+		allZero := r.chance(5)
+		for g := 0; g < ngoals; g++ {
+			name := fmt.Sprintf("g%d", g)
+			p := prios[g]
+			if allZero {
+				p = 0
+			}
+			lines = append(lines, fmt.Sprintf("G %s %08x", name, math.Float32bits(p)))
+			conds := goapai.Conditions{}
+			for c := 1 + r.n(2); c > 0; c-- {
+				k := r.n(nkeys)
+				v := pick(k)
+				op := uint8(r.n(6))
+				// Mostly derive the condition from an effect some action
+				// has, so that goals are often reachable but not trivially.
+				if len(made) > 0 && r.chance(75) {
+					e := made[r.n(len(made))]
+					k, v = e.k, e.v
+					switch {
+					case e.op == 1 && (v.t == "int" || v.t == "i8") && v.i > 0:
+						v.i = initial[k].i + v.i*int64(1+r.n(3))
+						op = 4 // UPPER_OR_EQUAL: needs repetition
+					case e.op == 1 && (v.t == "u8" || v.t == "u64") && v.u > 0 && v.u < 100:
+						v.u = initial[k].u + v.u*uint64(1+r.n(3))
+						op = 4
+					default:
+						op = 0 // EQUAL to the value the effect writes
+					}
+				}
+				conds = append(conds, condition(goapai.StateKey(k), v, op))
+				lines = append(lines, fmt.Sprintf("C %d %s %d %s", k, v.t, op, v.enc()))
+			}
+			pp := p
+			goals[goapai.GoalName(name)] = struct {
+				Conditions []goapai.ConditionInterface
+				PriorityFn goapai.GoalPriorityFn
+			}{conds, func(goapai.Sensors) float32 { return pp }}
+		}
+
+		agent := goapai.CreateAgent(goals, actions)
+		for k := 0; k < nkeys; k++ {
+			setState(&agent, goapai.StateKey(k), initial[k])
+			fmt.Fprintf(&out, "T %d %s %s\n", k, keyType[k], initial[k].enc())
+		}
+		for _, l := range lines {
+			out.WriteString(l + "\n")
+		}
+
+		goalName, plan := goapai.GetPlan(agent, maxDepth)
+		gn := string(goalName)
+		if gn == "" {
+			gn = "-"
+		}
+		names := make([]string, len(plan))
+		for i, a := range plan {
+			names[i] = a.GetName()
+			if names[i] == "" {
+				names[i] = "_"
+			}
+		}
+		fmt.Fprintf(&out, "R %s %08x %d %s\n", gn, math.Float32bits(plan.GetTotalCost()), len(plan), strings.Join(names, " "))
+	}
+
+	if err := os.WriteFile(os.Args[1], []byte(out.String()), 0o644); err != nil {
+		panic(err)
+	}
+}

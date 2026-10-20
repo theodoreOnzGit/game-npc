@@ -1,0 +1,20 @@
+[package]
+name = "goapai"
+version = "0.1.0"
+edition = "2021"
+# Combined work: Rust translation of goapai (Apache-2.0, see NOTICE and
+# LICENSE-APACHE-2.0.md), distributed with modifications under AGPL-3.0-only.
+license = "AGPL-3.0-only"
+description = "Rust translation of the goapai Go GOAP planner (microlithic GOAP, forward A*)"
+repository = "https://github.com/theodoreOnzGit/game-npc"
+publish = false
+
+[features]
+default = []
+std = []
+
+[dependencies]
+
+[[example]]
+name = "bench"
+required-features = ["std"]

@@ -7,6 +7,9 @@ description = "Literature-grounded motivation taxonomy and deterministic decisio
 repository = "https://github.com/theodoreOnzGit/game-npc"
 readme = "README.md"
 
+[workspace]
+members = [".", "crates/goapai"]
+
 [lib]
 name = "game_npc"
 

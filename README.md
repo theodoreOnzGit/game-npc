@@ -4,11 +4,13 @@ An NPC intelligence engine core for games. It decides what a character wants
 from a small, literature-grounded vocabulary of motivations, and turns those
 wants into actions through deterministic, validated steps.
 
-**Status: v0.1 deterministic baseline.** The motivation taxonomy, state and
-personality model, deterministic scoring, goal generation, action validation
+**Status: v0.1 deterministic baseline, plus a verified GOAP planner.** The
+motivation taxonomy, state and personality model, deterministic scoring, goal generation, action validation
 and replayable decision traces are implemented and tested. The neural
 motivation model (Burn), the PETIR and petgraph integrations, and the SAGE
-engine bridge are **not implemented yet**. See issues #1 and #2.
+engine bridge are **not implemented yet**. See issues #1 and #2. The GOAP
+planner (issue #3) is translated and verified but not yet connected to the
+motivation core.
 
 Licence: AGPL-3.0-only.
 
@@ -51,17 +53,27 @@ peer must compute bit-identical results. The core therefore:
 - is `no_std`, allocation-free and `#![forbid(unsafe_code)]`;
 - emits a 64-bit FNV-1a checksum per decision, for desync detection.
 
-`tests/scenarios.rs` pins a golden checksum. It was recorded on
-x86_64-unknown-linux-gnu. **It has not yet been run on a second platform**
-(wasm32 is compile-checked only), so cross-platform bit-identity is designed
-for but not yet demonstrated.
+`tests/scenarios.rs` pins a golden checksum, recorded on
+x86_64-unknown-linux-gnu and reproduced bit-for-bit on wasm32-wasip1 (Node 22
+WASI) on 2026-10-20. (**Corrected 2026-10-20:** an earlier version of this
+README said it had not yet been run on a second platform.)
+
+## Workspace
+
+| Crate | What it is |
+|---|---|
+| `game-npc` (root) | motivation taxonomy and deterministic decision core (issue #1) |
+| [`crates/goapai`](crates/goapai/README.md) | Rust translation of the goapai GOAP planner, verified against the Go original (issue #3) |
 
 ## Build and test
 
 ```bash
-cargo test --release
-cargo clippy --release --all-targets -- -D warnings
-cargo build --release --target wasm32-unknown-unknown
+cargo test --release --workspace
+cargo clippy --release --workspace --all-targets -- -D warnings
+cargo build --release --workspace --target wasm32-unknown-unknown
+# Run the same tests as WebAssembly (needs Node >= 20 and the target:
+# rustup target add wasm32-wasip1). The runner is set in .cargo/config.toml.
+cargo test --release --workspace --target wasm32-wasip1
 ```
 
 ## Taxonomy

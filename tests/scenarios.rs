@@ -146,7 +146,8 @@ fn long_run_replays_and_is_reproducible() {
 /// result bits is caught. If this fails after an *intentional* change to
 /// scoring or appraisal, update the constant and say so in the commit.
 ///
-/// Recorded 2026-10-20, x86_64-unknown-linux-gnu, rustc 1.97.0.
+/// Recorded 2026-10-20, x86_64-unknown-linux-gnu, rustc 1.97.0. Reproduced
+/// bit-for-bit on wasm32-wasip1 (Node 22 WASI) the same day.
 #[test]
 fn golden_checksum() {
     let mut npc = Npc {

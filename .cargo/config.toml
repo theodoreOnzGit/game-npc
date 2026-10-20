@@ -1,0 +1,5 @@
+# Run wasm32-wasip1 test binaries under Node's WASI, so the same tests that
+# run natively also run as WebAssembly:
+#   cargo test --release --workspace --target wasm32-wasip1
+[target.wasm32-wasip1]
+runner = "scripts/run-wasi.mjs"
