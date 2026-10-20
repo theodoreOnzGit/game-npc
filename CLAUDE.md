@@ -9,7 +9,10 @@ that already does the job, and reuse it.** Look in this order:
 
 1. **This workspace.** The root crate `game-npc` (motivation taxonomy,
    appraisal, scoring, validation, decision traces) and every crate under
-   `crates/` (currently `crates/goapai`, the verified GOAP planner). Grep
+   `crates/`: `crates/goapai` (verified GOAP planner), `crates/soar-decide`
+   (Soar's decision procedure, preference semantics, exploration policies
+   and Mersenne Twister) and `crates/selector` (one subroutine per request,
+   utility models including ACT-R utility learning). Grep
    for the domain noun (for example "preference", "planner", "rng",
    "graph"), not for the API name you intend to write.
 2. **`outram-park-backend`**

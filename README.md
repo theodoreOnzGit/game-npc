@@ -4,13 +4,14 @@ An NPC intelligence engine core for games. It decides what a character wants
 from a small, literature-grounded vocabulary of motivations, and turns those
 wants into actions through deterministic, validated steps.
 
-**Status: v0.1 deterministic baseline, plus a verified GOAP planner.** The
-motivation taxonomy, state and personality model, deterministic scoring, goal generation, action validation
-and replayable decision traces are implemented and tested. The neural
+**Status: v0.1 deterministic baseline, plus a verified GOAP planner, Soar's
+decision procedure and a subroutine selector.** The motivation taxonomy,
+state and personality model, deterministic scoring, goal generation, action
+validation and replayable decision traces are implemented and tested. The neural
 motivation model (Burn), the PETIR and petgraph integrations, and the SAGE
 engine bridge are **not implemented yet**. See issues #1 and #2. The GOAP
-planner (issue #3) is translated and verified but not yet connected to the
-motivation core.
+planner (issue #3) and the Soar-based selector (issue #4) are verified but
+not yet connected to the motivation core.
 
 Licence: AGPL-3.0-only.
 
