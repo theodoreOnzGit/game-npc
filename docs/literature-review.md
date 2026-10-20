@@ -12,7 +12,7 @@
 >
 > | Review section | Code or issue |
 > |---|---|
-> | §2.1 Soar, operator selection, impasses | #4; `docs/soar-survey.md`; `crates/soar-decide` (in progress) |
+> | §2.1 Soar, operator selection, impasses | #4; `docs/soar-survey.md`; `crates/soar-decide` |
 > | §2.2 Soar-RL | #4 scope item 2 in `docs/soar-survey.md` |
 > | §2.4 CLARION motivational subsystem | #1; `src/` motivation core |
 > | §3.1–3.2 GOAP and implementations | #3 (closed); `crates/goapai` |

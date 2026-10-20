@@ -8,7 +8,7 @@ repository = "https://github.com/theodoreOnzGit/game-npc"
 readme = "README.md"
 
 [workspace]
-members = [".", "crates/goapai"]
+members = [".", "crates/goapai", "crates/soar-decide"]
 
 [lib]
 name = "game_npc"

@@ -1,0 +1,24 @@
+Soar Cognitive Architecture
+
+Copyright (C) 2000-2012 The Regents of the University of Michigan.
+Copyright (C) 1995-1999 Carnegie Mellon University, The Regents of the
+University of Michigan, University of Southern California/Information
+Sciences Institute. All rights reserved.
+
+----
+
+This crate is a Rust translation of parts of the Soar kernel
+(https://github.com/SoarGroup/Soar), pinned at commit
+3fc337a1ab2d04b9e5183335c1496d7dcdc57c1c (2026-10-07), distributed under
+the BSD licence reproduced in LICENSE-SOAR-BSD.md.
+
+src/rng.rs translates Soar's soar_rand.h, which is Richard J. Wagner's
+MersenneTwister.h v1.0, based on code by Makoto Matsumoto, Takuji
+Nishimura and Shawn Cokus, Copyright (C) 1997-2002 Makoto Matsumoto and
+Takuji Nishimura, Copyright (C) 2000-2003 Richard J. Wagner, under a BSD
+licence (reproduced in the header of src/rng.rs).
+
+Modifications: translated to Rust and modified as listed in
+docs/DEVIATIONS.md. Translation and modifications Copyright 2026 the
+game-npc authors, distributed under the GNU Affero General Public License
+v3.0 only (LICENSE in this directory).

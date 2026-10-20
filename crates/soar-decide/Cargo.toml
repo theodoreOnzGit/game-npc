@@ -1,0 +1,23 @@
+[package]
+name = "soar-decide"
+version = "0.1.0"
+edition = "2021"
+# Combined work: Rust translation of parts of the Soar kernel (BSD, see
+# NOTICE and LICENSE-SOAR-BSD.md), distributed under AGPL-3.0-only.
+license = "AGPL-3.0-only"
+description = "Rust translation of Soar's decision procedure: preference semantics, impasses and exploration policies"
+repository = "https://github.com/theodoreOnzGit/game-npc"
+publish = false
+
+[features]
+default = []
+std = []
+
+[dependencies]
+# Bit-reproducible exp (musl libm in pure Rust) for Boltzmann selection,
+# reused from the outram-park workspace rather than adding libm directly.
+petir = { version = "0.0.2", default-features = false }
+
+[[example]]
+name = "gen_differential"
+required-features = ["std"]
