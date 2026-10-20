@@ -65,6 +65,7 @@ README said it had not yet been run on a second platform.)
 | `game-npc` (root) | motivation taxonomy and deterministic decision core (issue #1) |
 | [`crates/goapai`](crates/goapai/README.md) | Rust translation of the goapai GOAP planner, verified against the Go original (issue #3) |
 | [`crates/soar-decide`](crates/soar-decide/README.md) | Rust translation of Soar's decision procedure (preference semantics, impasses, exploration policies, RNG), verified against the `soar` binary (issue #4) |
+| [`crates/selector`](crates/selector/README.md) | Issue #4 subroutine selector: one routine per request through Soar preferences, typed errors, replayable traces, pluggable utility model |
 
 ## Build and test
 

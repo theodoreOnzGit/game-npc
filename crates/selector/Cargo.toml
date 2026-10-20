@@ -1,0 +1,17 @@
+[package]
+name = "selector"
+version = "0.1.0"
+edition = "2021"
+license = "AGPL-3.0-only"
+description = "Soar-style subroutine selector: picks one reasoning routine per request, deterministically by default"
+repository = "https://github.com/theodoreOnzGit/game-npc"
+publish = false
+
+[dependencies]
+soar-decide = { path = "../soar-decide" }
+
+[dev-dependencies]
+# Only the integration test, which demonstrates delegated execution; the
+# selector itself stays independent of every subroutine.
+goapai = { path = "../goapai" }
+petir = { version = "0.0.2", default-features = false }
