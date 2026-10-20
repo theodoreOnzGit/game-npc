@@ -59,6 +59,8 @@ cannot select an incompatible one. `SelectionTrace` records:
 `crates/goapai`, and root finding on PETIR's Brent solver (GSL port).
 Neither is a dependency of the selector.
 
+**Learned baseline without a neural net:** `ActrUtility` uses ACT-R's utility-learning rule `U ← U + α(R − U)` as a `UtilityModel`. It is deterministic and is the baseline a Burn model must beat (see `docs/oltramari-2023-critique.md`).
+
 **Not done:**
 - the Burn model and its training data (#4 phase 3);
 - petgraph and SAGE adapters;

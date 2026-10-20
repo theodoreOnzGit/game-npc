@@ -52,11 +52,13 @@
 
 extern crate alloc;
 
+pub mod actr;
 pub mod execute;
 pub mod registry;
 pub mod select;
 pub mod task;
 
+pub use actr::{ActrError, ActrUtility};
 pub use execute::{execute, ExecutionError, Limits, Subroutine};
 pub use registry::{
     Applicability, Cost, Precondition, ReasoningRequest, Registry, RegistryError, SubroutineSpec,

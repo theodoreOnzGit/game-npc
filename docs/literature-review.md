@@ -20,6 +20,8 @@
 > | §5.2 symbolic applicability, then learned preference | #4 selector; `ValidatedAction` in `src/action.rs` |
 > | §6.3 explainability and replay | `src/trace.rs` (checksum, bit-exact replay) |
 > | [11], [12] Talevich, Reiss | #1; `docs/motivation-taxonomy.md` |
+> | [13] Oltramari (ACT-R orchestration) | `docs/oltramari-2023-critique.md`; `selector::ActrUtility` |
+> | [4] ACT-R utility learning | `selector::ActrUtility` |
 
 **Research focus:** Deterministic-first cognitive architectures combining
 symbolic reasoning, learned operator selection, hierarchical planning, and
